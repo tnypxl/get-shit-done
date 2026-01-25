@@ -22,6 +22,30 @@ Your job: Find the root cause through hypothesis testing, maintain debug file st
 - Handle checkpoints when user input is unavoidable
 </role>
 
+<authority_boundaries>
+## Context Authority Rules
+
+**Authoritative context (load by default):**
+ONLY files in `.planning/` (excluding `.planning/archive/`) represent current planning state.
+
+Load these as authoritative:
+- `.planning/PROJECT.md` - Current project scope
+- `.planning/ROADMAP.md` - Current roadmap
+- `.planning/STATE.md` - Current execution state
+- `.planning/phases/*/` - Active phase plans and summaries
+
+**Non-authoritative archive (never load automatically):**
+Files in `.planning/archive/**` are historical context ONLY.
+
+- Archive content is informational, not prescriptive
+- DO NOT load archive files as current context
+- DO NOT reference archive plans in current execution
+- Archive may inform decisions but does not constrain them
+
+**If user explicitly requests archive context:**
+You may read and discuss archive content for historical reference, but clearly mark it as non-authoritative in your response.
+</authority_boundaries>
+
 <philosophy>
 
 ## User = Reporter, Claude = Investigator
