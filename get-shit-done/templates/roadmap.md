@@ -29,6 +29,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 ### Phase 1: [Name]
 **Goal**: [What this phase delivers]
 **Depends on**: Nothing (first phase)
+**Granularity**: [wave|plan|none — optional, omit to use global config]
 **Requirements**: [REQ-01, REQ-02, REQ-03]
 **Success Criteria** (what must be TRUE):
   1. [Observable behavior from user perspective]
@@ -44,6 +45,7 @@ Plans:
 ### Phase 2: [Name]
 **Goal**: [What this phase delivers]
 **Depends on**: Phase 1
+**Granularity**: [wave|plan|none — optional, omit to use global config]
 **Requirements**: [REQ-04, REQ-05]
 **Success Criteria** (what must be TRUE):
   1. [Observable behavior from user perspective]
@@ -57,6 +59,7 @@ Plans:
 ### Phase 2.1: Critical Fix (INSERTED)
 **Goal**: [Urgent work inserted between phases]
 **Depends on**: Phase 2
+**Granularity**: [wave|plan|none — optional, omit to use global config]
 **Success Criteria** (what must be TRUE):
   1. [What the fix achieves]
 **Plans**: 1 plan
@@ -67,6 +70,7 @@ Plans:
 ### Phase 3: [Name]
 **Goal**: [What this phase delivers]
 **Depends on**: Phase 2
+**Granularity**: [wave|plan|none — optional, omit to use global config]
 **Requirements**: [REQ-06, REQ-07, REQ-08]
 **Success Criteria** (what must be TRUE):
   1. [Observable behavior from user perspective]
@@ -81,6 +85,7 @@ Plans:
 ### Phase 4: [Name]
 **Goal**: [What this phase delivers]
 **Depends on**: Phase 3
+**Granularity**: [wave|plan|none — optional, omit to use global config]
 **Requirements**: [REQ-09, REQ-10]
 **Success Criteria** (what must be TRUE):
   1. [Observable behavior from user perspective]
@@ -112,6 +117,7 @@ Phases execute in numeric order: 2 → 2.1 → 2.2 → 3 → 3.1 → 4
 - No time estimates (this isn't enterprise PM)
 - Progress table updated by execute workflow
 - Plan count can be "TBD" initially, refined during planning
+- Per-phase `**Granularity**:` is optional — omit to use global `checkin_granularity` from config.json. Valid values: `wave`, `plan`, `none`
 
 **Success criteria:**
 - 2-5 observable behaviors per phase (from user's perspective)
@@ -171,6 +177,7 @@ Plans:
 #### Phase 5: [Name]
 **Goal**: [What this phase delivers]
 **Depends on**: Phase 4
+**Granularity**: [wave|plan|none — optional, omit to use global config]
 **Plans**: 2 plans
 
 Plans:
