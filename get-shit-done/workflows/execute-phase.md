@@ -218,6 +218,16 @@ Update after each check-in's "Continue" response.
 <step name="execute_waves">
 Execute each wave in sequence. Within a wave: parallel if `PARALLELIZATION=true`, sequential if `false`.
 
+**Plan granularity sequential override:**
+
+IF CHECKIN_GRANULARITY is "plan" AND CURRENT_MODE is NOT "yolo":
+  Plans within each wave execute ONE AT A TIME (sequential, not parallel).
+  After each plan completes, invoke checkin_interaction with type="plan".
+  This overrides the normal parallel spawning behavior for the wave.
+
+IF CHECKIN_GRANULARITY is "wave" or "phase":
+  Plans within each wave execute in PARALLEL (existing behavior unchanged).
+
 **For each wave:**
 
 1. **Describe what's being built (BEFORE spawning):**
@@ -309,11 +319,45 @@ Execute each wave in sequence. Within a wave: parallel if `PARALLELIZATION=true`
    - Bad: "Wave 2 complete. Proceeding to Wave 3."
    - Good: "Terrain system complete — 3 biome types, height-based texturing, physics collision meshes. Vehicle physics (Wave 3) can now reference ground surfaces."
 
-5. **Handle failures:** Report which plan failed → ask "Continue?" or "Stop?" → if continue, dependent plans may also fail. If stop, partial completion report.
+3b. **Wave check-in (if configured):**
 
-6. **Execute checkpoint plans between waves** — see `<checkpoint_handling>`.
+    IF CHECKIN_GRANULARITY is "wave" AND CURRENT_MODE is NOT "yolo":
+      Use wave check-in pattern from @~/.claude/get-shit-done/references/ui-brand.md "Check-in Boxes" section (compact or expanded per adaptive density rule).
+      Invoke checkin_interaction with:
+      - type: "wave"
+      - status: wave number, completed plan IDs, total files changed, next wave description
+      - context: Wave {N}
 
-7. **Proceed to next wave.**
+      If checkin_interaction returns "stop", exit execution.
+      If "continue", proceed to next wave.
+
+    IF CHECKIN_GRANULARITY is "plan":
+      Check-ins already happened after each plan (sequential override above). No additional wave check-in needed.
+      (CONTEXT.md decision: "At plan granularity, all check-ins are plan-level -- no special treatment at wave boundaries")
+
+    IF CHECKIN_GRANULARITY is "phase":
+      No check-in. Proceed to next wave.
+
+4. **Handle failures:**
+
+   If any agent in wave fails:
+   - Report which plan failed and why
+
+   IF PAUSE_ON_FAILURE is "true" AND CURRENT_MODE is NOT "yolo":
+     Use failure check-in pattern from @~/.claude/get-shit-done/references/ui-brand.md "Check-in Boxes" section.
+     Invoke checkin_interaction with:
+     - type: "failure"
+     - status: failed plan ID, error reason, remaining plans in wave, remaining waves
+     - context: Plan {ID} Failed
+
+   ELSE (PAUSE_ON_FAILURE is false OR YOLO mode):
+     Ask user (existing behavior): "Continue with remaining waves?" or "Stop execution?"
+     If continue: proceed to next wave (dependent plans may also fail)
+     If stop: exit with partial completion report
+
+5. **Execute checkpoint plans between waves** — see `<checkpoint_handling>`.
+
+6. **Proceed to next wave.**
 </step>
 
 <step name="checkpoint_handling">
@@ -369,6 +413,21 @@ After all waves:
 ### Issues Encountered
 [Aggregate from SUMMARYs, or "None"]
 ```
+
+**Phase completion gate:**
+
+IF CURRENT_MODE is NOT "yolo":
+  Present phase completion summary.
+  Invoke checkin_interaction with:
+  - type: "phase"
+  - status: total waves, total plans, aggregate files changed
+  - context: Phase {X} Complete
+
+  This gate fires at ALL granularity levels (phase, wave, plan).
+  CONTEXT.md decision: "At phase granularity (default), no mid-phase check-ins BUT always pause at phase completion before marking done -- gives user a final gate."
+
+  If "stop", exit before verification.
+  If "continue", proceed to verify_phase_goal.
 </step>
 
 <step name="verify_phase_goal">
