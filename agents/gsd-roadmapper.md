@@ -282,6 +282,53 @@ After roadmap creation, REQUIREMENTS.md gets updated with phase mappings:
 
 </coverage_validation>
 
+<granularity_inference>
+
+## Per-Phase Granularity Override
+
+When creating phases, assess each phase's risk/complexity to determine if a per-phase granularity override is warranted. Overrides are OPTIONAL — only set them when a phase is notably different from the norm.
+
+**Assessment heuristics:**
+
+| Signal | Indicator | Suggested Override |
+|--------|-----------|-------------------|
+| Many requirements (6+) | High scope, more things to go wrong | `plan` |
+| External dependencies | API integrations, auth providers, third-party services | `plan` |
+| Few requirements (1-2) + simple goal | Low risk, straightforward work | `none` |
+| Infrastructure/setup phase | Foundational, usually well-understood patterns | `none` |
+| Complex cross-phase wiring | Integration with multiple prior phases | `wave` |
+
+**Rules:**
+- Set overrides based on RELATIVE risk between phases, not absolute thresholds
+- If all phases have similar complexity, set NO overrides (let global config handle it)
+- Only set an override when a phase is notably riskier or simpler than others
+- Valid values: `wave`, `plan`, `none` (never `phase` — that's the default)
+
+**Transparency requirement:**
+When setting a granularity override, explain WHY in the draft presentation. The reasoning appears in the draft but does NOT go into the final ROADMAP.md:
+
+```markdown
+### Phase 3: API Integration
+**Goal**: Connect to external payment provider
+**Depends on**: Phase 2
+**Granularity**: plan
+**Requirements**: PAY-01, PAY-02, PAY-03, PAY-04, PAY-05, PAY-06
+```
+
+In the draft presentation table, include a "Granularity" column:
+
+```
+| Phase | Goal | Requirements | Granularity |
+|-------|------|--------------|-------------|
+| 1 - Setup | ... | SETUP-01, SETUP-02 | none (2 reqs, low risk) |
+| 2 - Auth | ... | AUTH-01, AUTH-02, AUTH-03 | — (use global) |
+| 3 - API | ... | PAY-01 through PAY-06 | plan (6 reqs, external API) |
+```
+
+Phases with no override show "—" in the column.
+
+</granularity_inference>
+
 <output_formats>
 
 ## ROADMAP.md Structure
@@ -317,11 +364,11 @@ When presenting to user for approval:
 
 ### Phase Structure
 
-| Phase | Goal | Requirements | Success Criteria |
-|-------|------|--------------|------------------|
-| 1 - Setup | [goal] | SETUP-01, SETUP-02 | 3 criteria |
-| 2 - Auth | [goal] | AUTH-01, AUTH-02, AUTH-03 | 4 criteria |
-| 3 - Content | [goal] | CONT-01, CONT-02 | 3 criteria |
+| Phase | Goal | Requirements | Granularity | Success Criteria |
+|-------|------|--------------|-------------|------------------|
+| 1 - Setup | [goal] | SETUP-01, SETUP-02 | none (2 reqs, low risk) | 3 criteria |
+| 2 - Auth | [goal] | AUTH-01, AUTH-02, AUTH-03 | — (use global) | 4 criteria |
+| 3 - Content | [goal] | CONT-01, CONT-02 | — (use global) | 3 criteria |
 
 ### Success Criteria Preview
 
@@ -393,6 +440,7 @@ Apply phase identification methodology:
 2. Identify dependencies between groups
 3. Create phases that complete coherent capabilities
 4. Check depth setting for compression guidance
+5. Assess per-phase granularity overrides (see `<granularity_inference>`)
 
 ## Step 5: Derive Success Criteria
 
@@ -415,6 +463,7 @@ If gaps found, include in draft for user decision.
 **Write files first, then return.** This ensures artifacts persist even if context is lost.
 
 1. **Write ROADMAP.md** using output format
+   Include `**Granularity**:` field in phase blocks where override was determined. Omit the field for phases using global config.
 
 2. **Write STATE.md** using output format
 
