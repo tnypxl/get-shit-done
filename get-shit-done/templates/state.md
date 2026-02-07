@@ -54,6 +54,13 @@ Recent decisions affecting current work:
 - [Phase X]: [Decision summary]
 - [Phase Y]: [Decision summary]
 
+### Adjustments
+
+[Freeform direction from user during execution check-ins]
+[Each entry tagged with source check-in, e.g. "[Wave 2 check-in]: focus on error handling"]
+
+None yet.
+
 ### Pending Todos
 
 [From .planning/todos/pending/ — ideas captured during sessions]
@@ -144,6 +151,13 @@ Updated after each plan completion.
 ### Accumulated Context
 
 **Decisions:** Reference to PROJECT.md Key Decisions table, plus recent decisions summary for quick access. Full decision log lives in PROJECT.md.
+
+**Adjustments:** Freeform direction text from user during execution check-ins
+- Written when user selects "adjust" at a wave or plan check-in
+- Tagged with source check-in label (e.g., "[Wave 2 check-in]", "[Plan 02-03 check-in]")
+- Accumulate during phase execution, with most recent first
+- Cleared on phase transition (adjustments are phase-scoped)
+- Read by next spawned agent as additional context
 
 **Pending Todos:** Ideas captured via /gsd:add-todo
 - Count of pending todos
