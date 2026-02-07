@@ -4,6 +4,7 @@ Configuration options for `.planning/` directory behavior.
 
 <config_schema>
 ```json
+"checkin_granularity": "phase",
 "planning": {
   "commit_docs": true,
   "search_gitignored": false
@@ -17,6 +18,7 @@ Configuration options for `.planning/` directory behavior.
 
 | Option | Default | Description |
 |--------|---------|-------------|
+| `checkin_granularity` | `"phase"` | How often GSD checks in during interactive execution (`phase`, `wave`, `plan`) |
 | `commit_docs` | `true` | Whether to commit planning artifacts to git |
 | `search_gitignored` | `false` | Add `--no-ignore` to broad rg searches |
 | `git.branching_strategy` | `"none"` | Git branching approach: `"none"`, `"phase"`, or `"milestone"` |
@@ -73,6 +75,28 @@ fi
 **Note:** Most GSD operations use direct file reads or explicit paths, which work regardless of gitignore status.
 
 </search_behavior>
+
+<checkin_granularity_behavior>
+
+**What it controls:** How frequently GSD pauses for user check-in during interactive execution of a phase. Determines the granularity boundary at which the orchestrator returns control to the user.
+
+| Value | Behavior | Default |
+|-------|----------|---------|
+| `phase` | Check in between phases (least interruption, current default behavior) | Yes |
+| `wave` | Check in between waves within a phase | No |
+| `plan` | Check in after each plan completes (runs plans sequentially) | No |
+
+**Reading the config:**
+
+```bash
+CHECKIN_GRANULARITY=$(cat .planning/config.json 2>/dev/null | grep -o '"checkin_granularity"[[:space:]]*:[[:space:]]*"[^"]*"' | grep -o '"[^"]*"$' | tr -d '"' || echo "phase")
+```
+
+**YOLO mode:** Granularity is ignored when `mode` is `yolo`. No check-ins occur regardless of granularity setting.
+
+**Plan parallelization:** When granularity is `plan`, plans execute sequentially (parallelization silently overridden) to enable per-plan check-ins.
+
+</checkin_granularity_behavior>
 
 <setup_uncommitted_mode>
 

@@ -1,6 +1,7 @@
 {
   "mode": "interactive",
   "depth": "standard",
+  "checkin_granularity": "phase",
   "workflow": {
     "research": true,
     "plan_check": true,
