@@ -28,6 +28,8 @@ Configuration options for `.planning/` directory behavior.
 | `git.branching_strategy` | `"none"` | Git branching approach: `"none"`, `"phase"`, or `"milestone"` |
 | `git.phase_branch_template` | `"gsd/phase-{phase}-{slug}"` | Branch template for phase strategy |
 | `git.milestone_branch_template` | `"gsd/{milestone}-{slug}"` | Branch template for milestone strategy |
+
+**Note:** Per-phase granularity overrides are set in ROADMAP.md, not in config.json. See `<checkin_granularity_behavior>` for details.
 </config_schema>
 
 <commit_docs_behavior>
@@ -99,6 +101,48 @@ CHECKIN_GRANULARITY=$(cat .planning/config.json 2>/dev/null | grep -o '"checkin_
 **YOLO mode:** Granularity is ignored when `mode` is `yolo`. No check-ins occur regardless of granularity setting.
 
 **Plan parallelization:** When granularity is `plan`, plans execute sequentially (parallelization silently overridden) to enable per-plan check-ins.
+
+**Per-phase override:**
+
+Individual phases can override the global `checkin_granularity` by adding an optional `**Granularity**:` field to their phase block in ROADMAP.md:
+
+```markdown
+### Phase 3: API Integration
+**Goal**: Connect to external payment provider
+**Depends on**: Phase 2
+**Granularity**: plan
+**Requirements**: PAY-01, PAY-02
+```
+
+Valid per-phase values: `wave`, `plan`, `none`. The value `phase` is not valid as a per-phase override — it's the default and would be a no-op. Omit the field entirely to use the global config.
+
+**Override behavior:**
+- Per-phase granularity overrides the global config for that phase only
+- Bidirectional: can go stricter (global `phase` -> per-phase `plan`) or looser (global `wave` -> per-phase `none`)
+- YOLO mode wins always — per-phase overrides are ignored when YOLO is active
+- Invalid values produce a warning and fall back to the global config
+
+**The `none` value:**
+- Skips ALL scheduled check-ins for the phase: no wave check-ins, no plan check-ins, no phase completion gate
+- Does NOT suppress `pause_on_failure` — failure check-ins still fire when `pause_on_failure` is `true`
+- Verification still runs after the phase regardless of granularity
+- Use as an escape hatch for simple, low-risk phases
+
+**Reading per-phase override:**
+
+```bash
+# Read per-phase granularity from ROADMAP.md
+PHASE_GRANULARITY=$(sed -n "/### Phase.*${PHASE_NUMBER}.*:/,/### Phase/p" .planning/ROADMAP.md 2>/dev/null | grep -o '\*\*Granularity\*\*:[[:space:]]*[a-z]*' | grep -o '[a-z]*$' || echo "")
+
+if [ -n "$PHASE_GRANULARITY" ]; then
+  case "$PHASE_GRANULARITY" in
+    wave|plan|none) CHECKIN_GRANULARITY="$PHASE_GRANULARITY" ;;
+    *) echo "WARNING: Invalid per-phase granularity '$PHASE_GRANULARITY' — using global: $CHECKIN_GRANULARITY" ;;
+  esac
+fi
+```
+
+**Override priority:** Global config -> per-phase override -> YOLO guard (YOLO always wins).
 
 </checkin_granularity_behavior>
 
