@@ -275,6 +275,34 @@ Back to [current area]: [return to current question]"
 Track deferred ideas internally.
 </step>
 
+<step name="offer_granularity_override">
+After all selected areas are discussed, offer an optional granularity override question.
+
+Use AskUserQuestion:
+- header: "Per-Phase Granularity"
+- question: "Override check-in granularity for this phase? (optional)"
+- options:
+  - "Use global setting" — No override, use whatever is in config.json
+  - "Wave" — Check in between waves for this phase
+  - "Plan" — Check in after each plan (sequential execution) for this phase
+  - "None" — Skip all check-ins for this phase
+
+**Handle response:**
+
+IF "Use global setting":
+  No action. Do not add granularity to CONTEXT.md decisions.
+
+IF "Wave", "Plan", or "None":
+  Capture in CONTEXT.md under Decisions:
+  ```
+  ### Per-Phase Granularity
+  - Override: {selected value} — user chose to {stricter/looser} than global for this phase
+  ```
+  The planner will include `**Granularity**: {value}` in ROADMAP.md when creating phase plans.
+
+This step is always presented but is designed to be quick — one question, one selection, move on.
+</step>
+
 <step name="write_context">
 Create CONTEXT.md capturing decisions made.
 

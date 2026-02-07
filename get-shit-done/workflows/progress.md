@@ -43,6 +43,7 @@ If missing both ROADMAP.md and PROJECT.md: suggest `/gsd:new-project`.
 - Read `.planning/ROADMAP.md` for phase structure and objectives
 - Read `.planning/PROJECT.md` for current state (What This Is, Core Value, Requirements)
 - Read `.planning/config.json` for settings (model_profile, workflow toggles)
+- Check ROADMAP.md phase blocks for `**Granularity**:` overrides
   </step>
 
 <step name="recent">
@@ -81,6 +82,8 @@ If missing both ROADMAP.md and PROJECT.md: suggest `/gsd:new-project`.
 Phase [N] of [total]: [phase-name]
 Plan [M] of [phase-total]: [status]
 CONTEXT: [✓ if CONTEXT.md exists | - if not]
+{If current phase has **Granularity**: override in ROADMAP.md:}
+Granularity: {value} (overrides global: {global value from config.json})
 
 ## Key Decisions Made
 - [decision 1 from STATE.md]
@@ -263,6 +266,8 @@ Read ROADMAP.md to get the next phase's name and goal.
 ## ▶ Next Up
 
 **Phase {Z+1}: {Name}** — {Goal from ROADMAP.md}
+{If next phase has **Granularity**: override:}
+[granularity: {value}]
 
 `/gsd:discuss-phase {Z+1}` — gather context and clarify approach
 
