@@ -48,6 +48,84 @@ User action required. 62-character width.
 
 ---
 
+## Check-in Boxes
+
+Adaptive check-in displays for wave and plan boundaries during execution. Density adapts to execution results.
+
+**Wave Check-in (Compact)** -- smooth execution, no deviations, no errors, fewer than 10 files:
+
+```
+---
+
+## Wave {N} Complete
+
+Plans: {IDs} | Files: {count} | Deviations: None
+
+Next: Wave {N+1} -- {description}
+
+---
+```
+
+**Wave Check-in (Expanded)** -- deviations, errors, or 10+ files:
+
+```
+---
+
+## Wave {N} Complete
+
+**{Plan ID}: {Plan Name}**
+Files: {count} | Commit: {hash}
+Deviations: {description}
+
+**{Plan ID}: {Plan Name}**
+Files: {count} | Commit: {hash}
+Issues: {description}
+
+Total files changed: {count} | Next: Wave {N+1} -- {description}
+
+---
+```
+
+**Plan Check-in (Compact)** -- no deviations:
+
+```
+{Plan ID}: {Plan Name} | {N}/{M} tasks | {commit hash} | Next: {next plan}
+```
+
+**Plan Check-in (Expanded)** -- deviations or issues:
+
+```
+---
+
+{Plan ID}: {Plan Name}
+Tasks: {N}/{M} complete | Commit: {hash}
+Deviations: {description}
+Next: {next plan} -- {description}
+
+---
+```
+
+**Failure Check-in** -- triggered when `pause_on_failure` is true:
+
+```
+---
+
+## Plan {ID} Failed
+
+Plan: {ID} -- {Name}
+Status: Failed ({reason})
+Error: {error description}
+
+Remaining in wave: {plan IDs}
+Remaining waves: {wave info}
+
+---
+```
+
+**Density rule:** Use COMPACT when all smooth (no deviations, no issues, <10 files). Use EXPANDED when any of: deviations present, issues/errors present, 10+ files changed.
+
+---
+
 ## Status Symbols
 
 ```
