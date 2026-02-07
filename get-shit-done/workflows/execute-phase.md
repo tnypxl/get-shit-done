@@ -43,6 +43,27 @@ MILESTONE_BRANCH_TEMPLATE=$(echo "$GSD_CONFIG" | grep '^milestone_branch_templat
 ```
 
 When `PARALLELIZATION=false`, plans within a wave execute sequentially.
+
+**Read check-in config:**
+
+```bash
+# Read check-in granularity (default: phase)
+CHECKIN_GRANULARITY=$(cat .planning/config.json 2>/dev/null | grep -o '"checkin_granularity"[[:space:]]*:[[:space:]]*"[^"]*"' | grep -o '"[^"]*"$' | tr -d '"' || echo "phase")
+
+# Read pause on failure (default: true)
+PAUSE_ON_FAILURE=$(cat .planning/config.json 2>/dev/null | grep -o '"pause_on_failure"[[:space:]]*:[[:space:]]*[^,}]*' | grep -o 'true\|false' || echo "true")
+
+# Read execution mode for YOLO bypass
+CURRENT_MODE=$(cat .planning/config.json 2>/dev/null | grep -o '"mode"[[:space:]]*:[[:space:]]*"[^"]*"' | grep -o '"[^"]*"$' | tr -d '"' || echo "interactive")
+
+# YOLO bypass: no check-ins, no failure pausing
+if [ "$CURRENT_MODE" = "yolo" ]; then
+  CHECKIN_GRANULARITY="phase"
+  PAUSE_ON_FAILURE="false"
+fi
+```
+
+Store `CHECKIN_GRANULARITY`, `PAUSE_ON_FAILURE`, and `CURRENT_MODE` for use in execute_waves.
 </step>
 
 <step name="handle_branching">
@@ -127,6 +148,71 @@ Report:
 | 1 | 01-01, 01-02 | {from plan objectives, 3-8 words} |
 | 2 | 01-03 | ... |
 ```
+</step>
+
+<step name="checkin_interaction">
+Reusable check-in interaction loop. Called by execute_waves at wave, plan, failure, or phase boundaries.
+
+**Inputs:** check-in type ("wave", "plan", "failure", or "phase"), status summary text, completed plan IDs, check-in context (wave number or plan ID).
+
+**Adaptive density:**
+Before presenting, evaluate density:
+- Read SUMMARY.md for each just-completed plan
+- EXPANDED if any: "Deviations from Plan" is NOT "None", "Issues Encountered" is NOT "None", file count >= 10
+- COMPACT otherwise
+
+Use visual patterns from @~/.claude/get-shit-done/references/ui-brand.md "Check-in Boxes" section:
+- For wave check-ins: use wave check-in compact or expanded pattern
+- For plan check-ins: use plan check-in compact or expanded pattern
+- For failure check-ins: use failure check-in pattern
+
+**Interaction loop:**
+
+1. Present check-in display (compact or expanded, wave or plan format)
+
+2. Use AskUserQuestion:
+   - header: "{Type} Complete" (e.g., "Wave 2 Complete" or "Plan 02-01 Complete")
+   - question: "{status summary line}"
+   - options:
+     - "Continue" -- Proceed to next wave/plan
+     - "Review" -- See detailed summary or git diff
+     - "Stop" -- Halt execution and save progress
+   - allowsInput: true (enables freeform text as the "adjust" mechanism -- user types adjustment text into the Other/freeform field provided by AskUserQuestion)
+
+   Note: "Adjust" is NOT a separate named option. It is available through AskUserQuestion's built-in "Other" freeform input field (allowsInput: true). The three NAMED options are Continue, Review, and Stop only.
+
+3. Handle response:
+
+   IF "Continue":
+     Return to execute_waves. Proceed to next wave/plan.
+
+   IF "Review":
+     Ask follow-up: "Summary (SUMMARY.md content) or Diff (git diff since last check-in)?"
+     - "Summary": Read and display SUMMARY.md content for each completed plan in scope
+     - "Diff": Run `git diff {last_checkin_commit}..HEAD` where last_checkin_commit is tracked per check-in
+     After displaying, RETURN TO STEP 2 (re-present options). Do NOT auto-continue.
+
+   IF "Stop":
+     Invoke /gsd:pause-work logic:
+     - Record current position (which wave/plan was last completed, which remain)
+     - Write .continue-here.md with full state
+     - Present resume path: /gsd:resume-work
+     EXIT execution entirely.
+
+   IF freeform text (user typed into Other/adjust field):
+     Write adjustment to STATE.md under Accumulated Context > Adjustments:
+     ```
+     - [{check-in label}]: "{user's text}"
+     ```
+     Confirm: "Adjustment noted for next agent: {summary}"
+     RETURN TO STEP 2 (re-present options). Do NOT auto-continue.
+
+**Tracking last commit for diff:**
+Before each check-in, record current HEAD as `LAST_CHECKIN_COMMIT`:
+```bash
+LAST_CHECKIN_COMMIT=$(git rev-parse HEAD 2>/dev/null || echo "")
+```
+Update after each check-in's "Continue" response.
 </step>
 
 <step name="execute_waves">
