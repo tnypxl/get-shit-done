@@ -4,21 +4,25 @@ Configuration options for `.planning/` directory behavior.
 
 <config_schema>
 ```json
-"checkin_granularity": "phase",
-"planning": {
-  "commit_docs": true,
-  "search_gitignored": false
-},
-"git": {
-  "branching_strategy": "none",
-  "phase_branch_template": "gsd/phase-{phase}-{slug}",
-  "milestone_branch_template": "gsd/{milestone}-{slug}"
+{
+  "checkin_granularity": "phase",
+  "pause_on_failure": true,
+  "planning": {
+    "commit_docs": true,
+    "search_gitignored": false
+  },
+  "git": {
+    "branching_strategy": "none",
+    "phase_branch_template": "gsd/phase-{phase}-{slug}",
+    "milestone_branch_template": "gsd/{milestone}-{slug}"
+  }
 }
 ```
 
 | Option | Default | Description |
 |--------|---------|-------------|
 | `checkin_granularity` | `"phase"` | How often GSD checks in during interactive execution (`phase`, `wave`, `plan`) |
+| `pause_on_failure` | `true` | Whether to pause for check-in when a plan fails, regardless of granularity setting |
 | `commit_docs` | `true` | Whether to commit planning artifacts to git |
 | `search_gitignored` | `false` | Add `--no-ignore` to broad rg searches |
 | `git.branching_strategy` | `"none"` | Git branching approach: `"none"`, `"phase"`, or `"milestone"` |
@@ -97,6 +101,27 @@ CHECKIN_GRANULARITY=$(cat .planning/config.json 2>/dev/null | grep -o '"checkin_
 **Plan parallelization:** When granularity is `plan`, plans execute sequentially (parallelization silently overridden) to enable per-plan check-ins.
 
 </checkin_granularity_behavior>
+
+<pause_on_failure_behavior>
+
+**What it controls:** Whether execution pauses for a check-in when a plan fails, independent of the `checkin_granularity` setting. This adds failure-triggered check-ins on top of whatever granularity is configured.
+
+| Value | Behavior | Default |
+|-------|----------|---------|
+| `true` | Any plan failure triggers a check-in with options (continue/review/stop), regardless of current `checkin_granularity` | Yes |
+| `false` | Failures are reported in wave/phase completion summary but execution continues without pausing | No |
+
+**Reading the config:**
+
+```bash
+PAUSE_ON_FAILURE=$(cat .planning/config.json 2>/dev/null | grep -o '"pause_on_failure"[[:space:]]*:[[:space:]]*[^,}]*' | grep -o 'true\|false' || echo "true")
+```
+
+**Independence from granularity:** This setting is independent of `checkin_granularity`. A user with `checkin_granularity: "phase"` and `pause_on_failure: true` gets no mid-phase check-ins during normal execution but DOES get paused if any plan fails. A user with `checkin_granularity: "wave"` and `pause_on_failure: false` gets wave boundary check-ins but sails through failures without pausing.
+
+**YOLO mode:** Ignored when `mode` is `yolo`, same as `checkin_granularity`. No check-ins occur in YOLO mode regardless of this setting.
+
+</pause_on_failure_behavior>
 
 <setup_uncommitted_mode>
 
