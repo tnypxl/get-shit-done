@@ -38,5 +38,5 @@ Phase: $ARGUMENTS
 
 <process>
 Execute the execute-phase workflow from @~/.claude/get-shit-done/workflows/execute-phase.md end-to-end.
-Preserve all workflow gates (wave execution, checkpoint handling, verification, state updates, routing).
+Preserve all workflow gates (wave execution, checkpoint handling, check-in granularity, verification, state updates, routing).
 </process>
