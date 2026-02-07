@@ -26,7 +26,18 @@ Parse current values (default to `true` if not present):
 - `workflow.plan_check` — spawn plan checker during plan-phase
 - `workflow.verifier` — spawn verifier during execute-phase
 - `model_profile` — which model each agent uses (default: `balanced`)
+- `checkin_granularity` — how often to check in during execution (default: `phase`)
 - `git.branching_strategy` — branching approach (default: `"none"`)
+
+Read checkin_granularity:
+```bash
+CHECKIN_GRANULARITY=$(cat .planning/config.json 2>/dev/null | grep -o '"checkin_granularity"[[:space:]]*:[[:space:]]*"[^"]*"' | grep -o '"[^"]*"$' | tr -d '"' || echo "phase")
+```
+
+Read current mode (for YOLO detection):
+```bash
+CURRENT_MODE=$(cat .planning/config.json 2>/dev/null | grep -o '"mode"[[:space:]]*:[[:space:]]*"[^"]*"' | grep -o '"[^"]*"$' | tr -d '"' || echo "interactive")
+```
 </step>
 
 <step name="present_settings">
@@ -42,6 +53,16 @@ AskUserQuestion([
       { label: "Quality", description: "Opus everywhere except verification (highest cost)" },
       { label: "Balanced (Recommended)", description: "Opus for planning, Sonnet for execution/verification" },
       { label: "Budget", description: "Sonnet for writing, Haiku for research/verification (lowest cost)" }
+    ]
+  },
+  {
+    question: "Check-in granularity during execution?",
+    header: "Granularity",
+    multiSelect: false,
+    options: [
+      { label: "Phase", description: "Check in between phases (least interruption)" },
+      { label: "Wave", description: "Check in between waves within a phase" },
+      { label: "Plan", description: "Check in after each plan (runs plans sequentially)" }
     ]
   },
   {
@@ -83,6 +104,12 @@ AskUserQuestion([
   }
 ])
 ```
+
+**Pre-select based on current config values.** Pre-select the Granularity option matching `CHECKIN_GRANULARITY`.
+
+**If current mode is `yolo`, append " (ignored in YOLO mode)" to the Granularity question text.** For example: "Check-in granularity during execution? (ignored in YOLO mode)"
+
+**Value mapping:** "Phase" -> `"phase"`, "Wave" -> `"wave"`, "Plan" -> `"plan"`
 </step>
 
 <step name="update_config">
@@ -92,6 +119,7 @@ Merge new settings into existing config.json:
 {
   ...existing_config,
   "model_profile": "quality" | "balanced" | "budget",
+  "checkin_granularity": "phase" | "wave" | "plan",
   "workflow": {
     "research": true/false,
     "plan_check": true/false,
@@ -104,6 +132,9 @@ Merge new settings into existing config.json:
 ```
 
 Write updated config to `.planning/config.json`.
+
+**YOLO validation:** If current mode is `yolo` and user selected non-`phase` granularity, show a warning:
+"Granularity is ignored in YOLO mode. The setting will be saved but won't affect execution until you switch to interactive mode."
 </step>
 
 <step name="confirm">
@@ -117,6 +148,7 @@ Display:
 | Setting              | Value |
 |----------------------|-------|
 | Model Profile        | {quality/balanced/budget} |
+| Check-In Granularity | {phase/wave/plan} |
 | Plan Researcher      | {On/Off} |
 | Plan Checker         | {On/Off} |
 | Execution Verifier   | {On/Off} |
