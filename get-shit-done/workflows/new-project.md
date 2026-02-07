@@ -247,6 +247,52 @@ questions: [
 ]
 ```
 
+**Round 1.5 — Check-in granularity (Interactive mode only):**
+
+**If user selected Interactive mode in Round 1:**
+
+Use AskUserQuestion:
+
+```
+questions: [
+  {
+    header: "Check-In Granularity",
+    question: "How often should GSD check in during execution?",
+    multiSelect: false,
+    options: [
+      { label: "Phase (Recommended)", description: "Check in between phases — least interruption" },
+      { label: "Wave", description: "Check in between waves within a phase" },
+      { label: "Plan", description: "Check in after each plan completes (runs plans sequentially)" },
+      { label: "Learn more", description: "Explain what phases, waves, and plans are" }
+    ]
+  }
+]
+```
+
+**If "Learn more" selected:** Display this explanation, then re-ask the granularity question:
+
+```
+GSD breaks work into a hierarchy:
+
+  Phase — A major chunk of work (e.g., "Authentication")
+    Wave — A group of independent plans within a phase that can run in parallel
+      Plan — A single focused unit of work (e.g., "Create login endpoint")
+
+Check-in granularity controls when GSD pauses to show you what happened and ask if you want to continue:
+- Phase: Pause between phases (least interruption, recommended)
+- Wave: Pause between waves within each phase
+- Plan: Pause after every plan (most control, but plans run one at a time)
+```
+
+Then re-present the same AskUserQuestion above (without "Learn more" this time, or with it again — user may want to re-read).
+
+**If "Plan" selected:** Show a brief note:
+"Note: plan-level check-ins run plans sequentially instead of in parallel."
+
+**Value mapping:** "Phase (Recommended)" -> `"phase"`, "Wave" -> `"wave"`, "Plan" -> `"plan"`
+
+**If user selected YOLO mode in Round 1:** Skip this question entirely. Granularity defaults to `"phase"` in config but is ignored at execution time (CFG-03). This keeps the config schema consistent across all projects.
+
 **Round 2 — Workflow agents:**
 
 These spawn additional agents during planning/execution. They add tokens and time but improve quality.
@@ -307,6 +353,7 @@ Create `.planning/config.json` with all settings:
 {
   "mode": "yolo|interactive",
   "depth": "quick|standard|comprehensive",
+  "checkin_granularity": "phase|wave|plan",
   "parallelization": true|false,
   "commit_docs": true|false,
   "model_profile": "quality|balanced|budget",
@@ -318,6 +365,10 @@ Create `.planning/config.json` with all settings:
 }
 ```
 
+**`checkin_granularity` value:**
+- If user selected Interactive mode and answered Round 1.5: use their selection (`"phase"`, `"wave"`, or `"plan"`)
+- If user selected YOLO mode (Round 1.5 was skipped): write `"phase"` as the default. The field is present but ignored at execution time (CFG-03). This keeps the config schema consistent across all projects.
+
 **If commit_docs = No:**
 - Set `commit_docs: false` in config.json
 - Add `.planning/` to `.gitignore` (create if needed)
@@ -328,7 +379,13 @@ Create `.planning/config.json` with all settings:
 **Commit config.json:**
 
 ```bash
-node ~/.claude/get-shit-done/bin/gsd-tools.js commit "chore: add project config" --files .planning/config.json
+node ~/.claude/get-shit-done/bin/gsd-tools.js commit "chore: add project config
+
+Mode: [chosen mode]
+Depth: [chosen depth]
+Granularity: [chosen granularity or "phase (default, YOLO mode)"]
+Parallelization: [enabled/disabled]
+Workflow agents: research=[on/off], plan_check=[on/off], verifier=[on/off]" --files .planning/config.json
 ```
 
 **Note:** Run `/gsd:settings` anytime to update these preferences.
