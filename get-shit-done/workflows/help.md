@@ -413,6 +413,8 @@ When `commit_docs: false`:
 
 Granularity is ignored in YOLO mode. Configure via `/gsd:new-project` or `/gsd:settings`.
 
+**Per-phase override:** Individual phases can override the global granularity by adding `**Granularity**: wave|plan|none` to their phase block in ROADMAP.md. Set via `/gsd:discuss-phase` or by the roadmapper during `/gsd:new-project`. `none` skips all check-ins for that phase (but `pause_on_failure` still fires). YOLO mode overrides per-phase settings.
+
 Example config:
 
 ```json
