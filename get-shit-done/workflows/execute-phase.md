@@ -55,7 +55,31 @@ PAUSE_ON_FAILURE=$(cat .planning/config.json 2>/dev/null | grep -o '"pause_on_fa
 
 # Read execution mode for YOLO bypass
 CURRENT_MODE=$(cat .planning/config.json 2>/dev/null | grep -o '"mode"[[:space:]]*:[[:space:]]*"[^"]*"' | grep -o '"[^"]*"$' | tr -d '"' || echo "interactive")
+```
 
+**Save global value before per-phase override:**
+
+```bash
+GLOBAL_GRANULARITY="$CHECKIN_GRANULARITY"  # Save before per-phase override
+```
+
+**Read per-phase granularity override:**
+
+```bash
+# Read per-phase granularity from ROADMAP.md (if present, overrides global)
+PHASE_GRANULARITY=$(sed -n "/### Phase.*${PHASE_NUMBER}.*:/,/### Phase/p" .planning/ROADMAP.md 2>/dev/null | grep -o '\*\*Granularity\*\*:[[:space:]]*[a-z]*' | grep -o '[a-z]*$' || echo "")
+
+if [ -n "$PHASE_GRANULARITY" ]; then
+  case "$PHASE_GRANULARITY" in
+    wave|plan|none) CHECKIN_GRANULARITY="$PHASE_GRANULARITY" ;;
+    *) echo "WARNING: Invalid per-phase granularity '$PHASE_GRANULARITY' in ROADMAP.md — using global: $CHECKIN_GRANULARITY" ;;
+  esac
+fi
+```
+
+**YOLO bypass (runs LAST — wins always):**
+
+```bash
 # YOLO bypass: no check-ins, no failure pausing
 if [ "$CURRENT_MODE" = "yolo" ]; then
   CHECKIN_GRANULARITY="phase"
@@ -63,7 +87,7 @@ if [ "$CURRENT_MODE" = "yolo" ]; then
 fi
 ```
 
-Store `CHECKIN_GRANULARITY`, `PAUSE_ON_FAILURE`, and `CURRENT_MODE` for use in execute_waves.
+Store `CHECKIN_GRANULARITY`, `PAUSE_ON_FAILURE`, `CURRENT_MODE`, and `GLOBAL_GRANULARITY` for use in execute_waves.
 </step>
 
 <step name="handle_branching">
@@ -109,6 +133,11 @@ fi
 ```
 
 Report: "Found {N} plans in {phase_dir}"
+
+If per-phase override is active (CHECKIN_GRANULARITY differs from GLOBAL_GRANULARITY and CURRENT_MODE is not "yolo"):
+  Report: "Phase {N} granularity: {CHECKIN_GRANULARITY} (overrides global: {GLOBAL_GRANULARITY})"
+
+Only announce when an override is active. No announcement when using global config.
 </step>
 
 <step name="discover_plans">
@@ -335,7 +364,7 @@ IF CHECKIN_GRANULARITY is "wave" or "phase":
       Check-ins already happened after each plan (sequential override above). No additional wave check-in needed.
       (CONTEXT.md decision: "At plan granularity, all check-ins are plan-level -- no special treatment at wave boundaries")
 
-    IF CHECKIN_GRANULARITY is "phase":
+    IF CHECKIN_GRANULARITY is "phase" or "none":
       No check-in. Proceed to next wave.
 
 4. **Handle failures:**
@@ -416,18 +445,20 @@ After all waves:
 
 **Phase completion gate:**
 
-IF CURRENT_MODE is NOT "yolo":
+IF CURRENT_MODE is NOT "yolo" AND CHECKIN_GRANULARITY is NOT "none":
   Present phase completion summary.
   Invoke checkin_interaction with:
   - type: "phase"
   - status: total waves, total plans, aggregate files changed
   - context: Phase {X} Complete
 
-  This gate fires at ALL granularity levels (phase, wave, plan).
+  This gate fires at phase, wave, and plan granularity levels.
   CONTEXT.md decision: "At phase granularity (default), no mid-phase check-ins BUT always pause at phase completion before marking done -- gives user a final gate."
 
   If "stop", exit before verification.
   If "continue", proceed to verify_phase_goal.
+
+When CHECKIN_GRANULARITY is "none": Skip phase completion gate entirely. Proceed directly to verify_phase_goal. (Verification still runs -- `none` skips check-ins, not verification.)
 </step>
 
 <step name="verify_phase_goal">
